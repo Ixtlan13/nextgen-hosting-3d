@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AETHER COMPUTE // Next-Gen 3D Infrastructure Hero</title>
+  <style>
+    :root {
+      --bg: #050508;
+      --card-bg: rgba(10, 11, 18, 0.75);
+      --border: rgba(255, 255, 255, 0.1);
+      --border-active: rgba(0, 240, 255, 0.5);
+      --cyan: #00f0ff;
+      --neon-green: #00ff88;
+      --amber: #ffaa00;
+      --text: #f0f2f5;
+      --text-muted: #7e8696;
+      --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #webgl-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* UI Overlay */
+    .ui-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 32px 40px;
+    }
+
+    .interactive {
+      pointer-events: auto;
+    }
+
+    /* Top Navigation */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--cyan);
+      background: radial-gradient(circle, rgba(0, 240, 255, 0.25) 0%, transparent 70%);
+      display: grid;
+      place-items: center;
+      position: relative;
+    }
+
+    .brand-logo::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan);
+    }
+
+    .brand-text {
+      font-family: var(--mono);
+      font-size: 14px;
+      letter-spacing: 2px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .brand-badge {
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--cyan);
+      background: rgba(0, 240, 255, 0.05);
+      margin-left: 8px;
+    }
+
+    .nav-stats {
+      display: flex;
+      gap: 28px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stat-val {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .stat-val.live {
+      color: var(--neon-green);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stat-val.live::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--neon-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--neon-green);
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    /* Hero Center Layout */
+    .hero-container {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      align-items: center;
+      height: calc(100% - 140px);
+      gap: 40px;
+    }
+
+    .hero-content {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      background: linear-gradient(135deg, rgba(10, 12, 20, 0.6) 0%, rgba(5, 5, 8, 0.2) 100%);
+      padding: 36px;
+      border: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      border-radius: 4px;
+    }
+
+    .category-tag {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .category-tag::before {
+      content: '';
+      width: 16px;
+      height: 1px;
+      background: var(--cyan);
+    }
+
+    .hero-title {
+      font-size: 46px;
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -1.5px;
+      color: #fff;
+    }
+
+    .hero-title span {
+      background: linear-gradient(90deg, #fff 0%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+
+    /* Mode Selector Tabs */
+    .mode-selector {
+      display: flex;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 4px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      gap: 4px;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 9px 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+      border-radius: 2px;
+    }
+
+    .mode-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .mode-btn.active {
+      background: rgba(0, 240, 255, 0.12);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.15);
+    }
+
+    .actions {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .btn-primary {
+      padding: 14px 28px;
+      background: #fff;
+      color: #000;
+      border: none;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-primary:hover {
+      background: var(--cyan);
+      box-shadow: 0 0 24px var(--cyan);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      padding: 13px 24px;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      border-color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* Right Viewport Controls */
+    .viewport-controls {
+      position: absolute;
+      right: 40px;
+      bottom: 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--card-bg);
+      padding: 16px 20px;
+      border: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      border-radius: 4px;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .control-label {
+      color: var(--text-muted);
+    }
+
+    .control-value {
+      color: var(--cyan);
+    }
+
+    /* Footer */
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 20px;
+    }
+
+    .hotkey-hint {
+      display: flex;
+      gap: 16px;
+    }
+
+    .kbd {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 3px;
+      color: #fff;
+    }
+  </style>
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <!-- WebGL Canvas -->
+  <canvas id="webgl-canvas"></canvas>
+
+  <!-- UI Overlay -->
+  <div class="ui-layer">
+    <!-- Header -->
+    <header>
+      <div class="brand interactive">
+        <div class="brand-logo"></div>
+        <div class="brand-text">AETHER//CLOUD</div>
+        <span class="brand-badge">SLA 99.999%</span>
+      </div>
+
+      <div class="nav-stats">
+        <div class="stat-item">
+          <span class="stat-label">Network Throughput</span>
+          <span class="stat-val" id="throughput-val">128.4 Gbps</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Kernel Latency</span>
+          <span class="stat-val live" id="latency-val">0.38 ms</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Global Edge PoPs</span>
+          <span class="stat-val">74 Active</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="hero-container">
+      <div class="hero-content interactive">
+        <div class="category-tag">NEXT-GEN COMPUTE FABRIC</div>
+        <h1 class="hero-title">
+          Bare-Metal Velocity. <br />
+          <span>Infinite Cloud Topology.</span>
+        </h1>
+        <p class="hero-desc">
+          Custom hardware orchestration engineered for hyperscale AI pipelines, sub-millisecond databases, and high-frequency edge execution. Zero virtualization overhead.
+        </p>
+
+        <!-- Mode Selector -->
+        <div class="mode-selector">
+          <button class="mode-btn active" onclick="switchMode('dedicated')">DEDICATED RACK</button>
+          <button class="mode-btn" onclick="switchMode('cloud')">CLOUD FABRIC</button>
+          <button class="mode-btn" onclick="switchMode('vps')">ISOLATED VPS</button>
+        </div>
+
+        <div class="actions">
+          <button class="btn-primary" onclick="alert('Instant Node Deployment initiated via Assemblage API')">
+            Deploy Compute Node &rarr;
+          </button>
+          <button class="btn-secondary" onclick="resetCamera()">
+            Reset View
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Viewport Controls & Telemetry -->
+    <div class="viewport-controls interactive">
+      <div class="control-row">
+        <span class="control-label">CURRENT MESH:</span>
+        <span class="control-value" id="mesh-name">TITAN-X BLADE</span>
+      </div>
+      <div class="control-row">
+        <span class="control-label">CORE TEMP:</span>
+        <span class="control-value" id="temp-val">34.2 °C</span>
+      </div>
+      <div class="control-row">
+        <span class="control-label">INTERACTION:</span>
+        <span class="control-value">3D PARALLAX / ORBIT</span>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <div>PROTOTYPE DEVELOPED EXCLUSIVELY BY ASSEMBLAGE ARCHITECTURE</div>
+      <div class="hotkey-hint">
+        <span><span class="kbd">CLICK + DRAG</span> TO ROTATE</span>
+        <span><span class="kbd">SCROLL</span> TO ZOOM</span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // --- THREE.JS SCENE SETUP ---
+    const canvas = document.getElementById('webgl-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x050508, 0.035);
+
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(4, 2.5, 7.5);
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0x182038, 3.0);
+    scene.add(ambientLight);
+
+    const cyanPoint = new THREE.PointLight(0x00f0ff, 6, 25);
+    cyanPoint.position.set(3, 3, 4);
+    scene.add(cyanPoint);
+
+    const greenPoint = new THREE.PointLight(0x00ff88, 4, 20);
+    greenPoint.position.set(-2, -1, 3);
+    scene.add(greenPoint);
+
+    const dirLight = new THREE.DirectionalLight(0xffffff, 2.2);
+    dirLight.position.set(4, 8, 8);
+    scene.add(dirLight);
+
+    const rimLight = new THREE.DirectionalLight(0x00f0ff, 4.0);
+    rimLight.position.set(-6, 4, -4);
+    scene.add(rimLight);
+
+    // Root Group for 3D Assets (Offset to right of the UI text)
+    const rootGroup = new THREE.Group();
+    rootGroup.position.set(1.6, 0.2, 0);
+    scene.add(rootGroup);
+
+    // --- 1. THE 3D SERVER RACK / BLADE MONOLITH ---
+    const rackGroup = new THREE.Group();
+    rootGroup.add(rackGroup);
+
+    // Main Chassis Frame
+    const chassisGeo = new THREE.BoxGeometry(2.4, 4.2, 1.8);
+    const chassisMat = new THREE.MeshStandardMaterial({
+      color: 0x161a26,
+      metalness: 0.85,
+      roughness: 0.2
+    });
+    const chassis = new THREE.Mesh(chassisGeo, chassisMat);
+    rackGroup.add(chassis);
+
+    // Edge Wireframe Outline
+    const edges = new THREE.EdgesGeometry(chassisGeo);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.75 });
+    const wireframe = new THREE.LineSegments(edges, lineMat);
+    rackGroup.add(wireframe);
+
+    // Server Blades (Stack of 7 modular units)
+    const bladeGeo = new THREE.BoxGeometry(2.25, 0.46, 1.75);
+    const bladeMat = new THREE.MeshStandardMaterial({
+      color: 0x222a3d,
+      metalness: 0.8,
+      roughness: 0.25
+    });
+
+    const bladeLedMat = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
+    const ledGeo = new THREE.BoxGeometry(0.04, 0.04, 0.04);
+
+    const blades = [];
+    for (let i = 0; i < 7; i++) {
+      const blade = new THREE.Mesh(bladeGeo, bladeMat);
+      blade.position.y = -1.6 + i * 0.54;
+      rackGroup.add(blade);
+      blades.push(blade);
+
+      // Add status LEDs on front plate
+      for (let j = 0; j < 4; j++) {
+        const led = new THREE.Mesh(ledGeo, bladeLedMat);
+        led.position.set(-0.8 + j * 0.2, blade.position.y, 0.87);
+        rackGroup.add(led);
+      }
+
+      // Cooling Fin Slots
+      const slotGeo = new THREE.PlaneGeometry(0.8, 0.2);
+      const slotMat = new THREE.MeshBasicMaterial({ color: 0x002233, side: THREE.DoubleSide });
+      const slot = new THREE.Mesh(slotGeo, slotMat);
+      slot.position.set(0.4, blade.position.y, 0.86);
+      rackGroup.add(slot);
+    }
+
+    // --- 2. PROCEDURAL MICROCHIP & SUBSTRATE BASE ---
+    const chipBaseGeo = new THREE.BoxGeometry(6, 0.1, 6);
+    const chipBaseMat = new THREE.MeshStandardMaterial({
+      color: 0x07090f,
+      metalness: 0.8,
+      roughness: 0.5
+    });
+    const chipBase = new THREE.Mesh(chipBaseGeo, chipBaseMat);
+    chipBase.position.y = -2.2;
+    rootGroup.add(chipBase);
+
+    // Circuit Bus Grid Lines
+    const gridHelper = new THREE.GridHelper(6, 30, 0x00f0ff, 0x1a2536);
+    gridHelper.position.y = -2.14;
+    rootGroup.add(gridHelper);
+
+    // --- 3. FLOATING DATA PARTICLES (HYPER-FABRIC STREAM) ---
+    const particleCount = 1200;
+    const particleGeo = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const speeds = new Float32Array(particleCount);
+
+    for (let i = 0; i < particleCount; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 8;
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 6;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 8;
+      speeds[i] = 0.01 + Math.random() * 0.03;
+    }
+
+    particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const particleMat = new THREE.PointsMaterial({
+      color: 0x00f0ff,
+      size: 0.04,
+      transparent: true,
+      opacity: 0.75,
+      blending: THREE.AdditiveBlending
+    });
+
+    const particleSystem = new THREE.Points(particleGeo, particleMat);
+    rootGroup.add(particleSystem);
+
+    // --- INTERACTION & CURSOR PARALLAX ---
+    let mouseX = 0, mouseY = 0;
+    let targetRotationX = 0, targetRotationY = 0;
+    let isDragging = false;
+    let prevMouseX = 0, prevMouseY = 0;
+
+    window.addEventListener('mousemove', (e) => {
+      mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+      mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+
+      if (isDragging) {
+        const deltaX = e.clientX - prevMouseX;
+        const deltaY = e.clientY - prevMouseY;
+        rootGroup.rotation.y += deltaX * 0.006;
+        rootGroup.rotation.x += deltaY * 0.006;
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+      }
+    });
+
+    window.addEventListener('mousedown', (e) => {
+      if (e.target.tagName !== 'BUTTON' && !e.target.closest('.interactive')) {
+        isDragging = true;
+        prevMouseX = e.clientX;
+        prevMouseY = e.clientY;
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    window.addEventListener('wheel', (e) => {
+      camera.position.z = Math.max(4, Math.min(12, camera.position.z + e.deltaY * 0.005));
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- MODE SWITCHER LOGIC ---
+    let currentMode = 'dedicated';
+
+    function switchMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const meshLabel = document.getElementById('mesh-name');
+      const latencyVal = document.getElementById('latency-val');
+      const throughputVal = document.getElementById('throughput-val');
+
+      if (mode === 'dedicated') {
+        meshLabel.innerText = 'TITAN-X BARE METAL';
+        latencyVal.innerText = '0.38 ms';
+        throughputVal.innerText = '128.4 Gbps';
+        chassis.material.color.setHex(0x0c0e14);
+        lineMat.color.setHex(0x00f0ff);
+        particleMat.color.setHex(0x00f0ff);
+      } else if (mode === 'cloud') {
+        meshLabel.innerText = 'EDGE TOPOLOGY MESH';
+        latencyVal.innerText = '0.94 ms';
+        throughputVal.innerText = '840.0 Gbps';
+        chassis.material.color.setHex(0x0a1824);
+        lineMat.color.setHex(0x00ff88);
+        particleMat.color.setHex(0x00ff88);
+      } else if (mode === 'vps') {
+        meshLabel.innerText = 'ISOLATED KVM CORE';
+        latencyVal.innerText = '1.12 ms';
+        throughputVal.innerText = '40.0 Gbps';
+        chassis.material.color.setHex(0x181014);
+        lineMat.color.setHex(0xffaa00);
+        particleMat.color.setHex(0xffaa00);
+      }
+    }
+
+    function resetCamera() {
+      camera.position.set(4, 2.5, 7.5);
+      rootGroup.rotation.set(0, 0, 0);
+    }
+
+    // --- ANIMATION LOOP ---
+    let clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+      const time = clock.getElapsedTime();
+
+      // Subtle autonomous floating
+      if (!isDragging) {
+        rootGroup.rotation.y += 0.002;
+        rootGroup.rotation.x = Math.sin(time * 0.4) * 0.06 + mouseY * 0.15;
+        rootGroup.rotation.y += mouseX * 0.003;
+      }
+
+      // Pulse particle positions
+      const pPositions = particleGeo.attributes.position.array;
+      for (let i = 0; i < particleCount; i++) {
+        pPositions[i * 3 + 1] += speeds[i];
+        if (pPositions[i * 3 + 1] > 3.5) {
+          pPositions[i * 3 + 1] = -2.5;
+        }
+      }
+      particleGeo.attributes.position.needsUpdate = true;
+
+      // Slight LED oscillation
+      bladeLedMat.color.setHSL((Math.sin(time * 2) + 1) * 0.1 + 0.35, 1, 0.5);
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+  </script>
+</body>
+</html>
